@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="persistenceContext.xml"/>
+
+    <int:channel id="findTaskEnricherChannel"/>
+    <int:channel id="findTaskClosedEnricherChannel"/>
+
+    <int:channel id="findTaskServiceChannel"/>
+    <int:channel id="findTaskClosedServiceChannel"/>
+
+    <!-- See also:
+        http://static.springsource.org/spring-integration/reference/htmlsingle/#gateway-proxy
+        http://www.eaipatterns.com/MessagingGateway.html -->
+    <int:gateway id="enrichmentGateway" default-request-timeout="5000"
+                 default-reply-timeout="5000"
+                 service-interface="com.cognitomobile.ffiq.middleware.enrichmentsvc.impl.EnrichmentService">
+        <int:method name="findTask"                  request-channel="findTaskEnricherChannel"/>
+        <int:method name="findTaskClosed"        request-channel="findTaskClosedEnricherChannel"/>
+    </int:gateway>
+
+    <int:enricher id="findTaskEnricher"
+                  input-channel="findTaskEnricherChannel"
+                  request-channel="findTaskServiceChannel">
+        <int:property name="eventPlaceTime" expression="payload.eventPlaceTime"/>
+        <int:property name="visitCode" expression="payload.visitCode"/>
+    </int:enricher>
+
+    <int:enricher id="findTaskClosedEnricher"
+                  input-channel="findTaskClosedEnricherChannel"
+                  request-channel="findTaskClosedServiceChannel">
+        <int:property name="closeCode"    expression="payload.closeCode"/>
+        <int:property name="closeType" expression="payload.closeType"/>
+    </int:enricher>
+
+    <int:service-activator id="findTaskServiceActivator"
+                           ref="enricherimpl" method="findTask"
+                           input-channel="findTaskServiceChannel"/>
+
+    <int:service-activator id="findTaskClosedServiceActivator"
+                           ref="enricherimpl" method="findTaskClosed"
+                           input-channel="findTaskClosedServiceChannel"/>
+
+    <bean id="enricherimpl"
+          class="com.cognitomobile.ffiq.middleware.enrichmentsvc.impl.EnrichmentServiceImpl">
+        <property name="msgStoreRepository" ref="msgStoreRepository"/>
+          </bean>
+
+</beans>

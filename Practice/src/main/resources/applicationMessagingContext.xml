@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:file="http://www.springframework.org/schema/integration/file"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+            http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-2.0.xsd
+            http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+ 			http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.0.xsd
+ 			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+ 			http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+ 			http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd"
+	default-lazy-init="true">
+
+	<!-- <context:annotation-config/>
+	<context:component-scan base-package="com.cognito.messaging" annotation-config="true"/>-->
+    
+    <bean id="defaultRabbitConnectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory"
+          p:host="${messaging.host:localhost}"
+          p:port="15672"
+          p:username="${messaging.user:guest}"
+          p:password="${messaging.password:guest}"
+          p:virtualHost="${messaging.virtual.host:/}"/>
+	
+	<bean id="jsonMessageConverter" class="org.springframework.amqp.support.converter.JsonMessageConverter"/>
+
+    <rabbit:connection-factory id="springRabbitConnectionFactory" connection-factory="defaultRabbitConnectionFactory" />
+
+    <rabbit:admin id="admin" connection-factory="springRabbitConnectionFactory" auto-startup="true"/>
+    <rabbit:template id="rabbitTemplate" connection-factory="springRabbitConnectionFactory" 
+    			exchange="${messaging.pubsub.request.queue}" queue="${messaging.pubsub.request.queue}" routing-key="${messaging.pubsub.request.queue}"
+    			message-converter="jsonMessageConverter" channel-transacted="${rabbit.int.send.channel.transacted:true}"/>
+    			
+    
+	<!--
+	<import resource="classpath:rabbit-integration-core.xml"/>
+	<import resource="classpath:rabbit-integration-send-template-middleware.xml"/> -->
+
+	<!-- Properties files -->
+    <context:property-placeholder location="classpath:cognito.messaging.properties" ignore-unresolvable="true"/>
+
+    
+    
+    
+</beans>

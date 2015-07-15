@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+
+
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+
+
+    <import resource="rabbit-integration-core.xml"/>
+    <import resource="rabbit-integration-core-test-consumer-retry.xml"/>
+    <import resource="rabbit-integration-send-template-test.xml"/>
+    <import resource="rabbit-integration-receive-template-test-consumer-retry.xml"/>
+
+    <util:properties id="testConfiguration">
+        <prop key="rabbit.int.queueName">event.test</prop>
+        <prop key="rabbit.int.threadNamePrefix">TestComponent</prop>
+        <prop key="rabbit.int.routingKeys">bevo.*.*.*.*.*,fred.EventA.*.*.*.*</prop>
+        <prop key="retryPolicy.maxAttempts">3</prop>
+    </util:properties>
+
+    <bean id="dlqName" class="java.lang.String">
+        <constructor-arg value="${rabbit.int.queueName}.dlq"/>
+    </bean>
+
+
+    <bean name="receiver" class="com.cognitomobile.ffiq.rabbit.integration.MessageReceiver"/>
+
+    <int:service-activator input-channel="receiveChannelTest"
+                           method="receive"
+                           ref="receiver"/>
+
+    <import resource="rabbit-integration-test-second-receiver.xml"/>
+
+    <bean id="queuePurger" class="com.cognitomobile.ffiq.rabbit.integration.util.QueuePurger">
+        <constructor-arg name="connectionFactory" ref="springRabbitConnectionFactory"/>
+    </bean>
+
+    <bean id="dlqReader" class="com.cognitomobile.ffiq.rabbit.integration.dlq.DlqReader">
+        <constructor-arg name="connectionFactory" ref="springRabbitConnectionFactory"/>
+        <constructor-arg name="dlqName" ref="dlqName"/>
+    </bean>
+</beans>

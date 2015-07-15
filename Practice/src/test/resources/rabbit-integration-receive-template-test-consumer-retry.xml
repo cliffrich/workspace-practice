@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:oxm="http://www.springframework.org/schema/oxm" xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.0.xsd
+		http://www.springframework.org/schema/oxm
+		    http://www.springframework.org/schema/oxm/spring-oxm-3.0.xsd http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
+
+<rabbit:topic-exchange name="event.test.exchange" >
+    </rabbit:topic-exchange>
+
+    <rabbit:direct-exchange name="event.test.exchange.dlx" >
+        <rabbit:bindings>
+            <rabbit:binding queue="${rabbit.int.queueName}.dlq" key="${rabbit.int.queueName}"/>
+        </rabbit:bindings>
+    </rabbit:direct-exchange>
+
+
+    <rabbit:queue id="mainQueueTest" name="${rabbit.int.queueName}">
+        <rabbit:queue-arguments>
+            <entry key="x-dead-letter-exchange" value="event.test.exchange.dlx"/>
+            <entry key="x-dead-letter-routing-key" value="${rabbit.int.queueName}"/>
+        </rabbit:queue-arguments>
+    </rabbit:queue>
+
+    <rabbit:queue id="dlqQueueTest" name="${rabbit.int.queueName}.dlq" />
+
+
+    <int:channel id="receiveChannelTest"/>
+    <bean id="taskExecutorTams" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
+        <constructor-arg name="threadNamePrefix" value="LAURA_LAURA"/>
+    </bean>
+
+    <bean id="taskExecutorTest" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
+        <constructor-arg name="threadNamePrefix" value="${rabbit.int.threadNamePrefix}-"/>
+    </bean>
+
+    <int-amqp:inbound-channel-adapter queue-names="${rabbit.int.queueName}"
+                                      channel="receiveChannelTest"
+                                      connection-factory="springRabbitConnectionFactory"
+                                      acknowledge-mode="AUTO"
+                                      message-converter="messageConverterTest"
+                                      error-handler="errorHandler"
+                                      advice-chain="retryInterceptor"
+                                      prefetch-count="1"
+                                      concurrent-consumers="5"
+                                      mapped-request-headers="*"
+                                      task-executor="taskExecutorTest"
+                                      channel-transacted="${rabbit.int.channel.transacted:true}"/>
+
+    <bean id="queueBindingsTest" class="com.cognitomobile.ffiq.rabbit.integration.impl.GenerateBindings">
+        <constructor-arg name="exchange" value="event.test.exchange"/>
+        <constructor-arg name="queue" value="${rabbit.int.queueName}"/>
+        <constructor-arg name="routingKeys" value="${rabbit.int.routingKeys}"/>
+    </bean>
+
+
+</beans>

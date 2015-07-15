@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:oxm="http://www.springframework.org/schema/oxm"
+       xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.0.xsd
+		http://www.springframework.org/schema/oxm
+		    http://www.springframework.org/schema/oxm/spring-oxm-3.0.xsd">
+
+
+    <rabbit:topic-exchange name="ffiq.events.mw.exchange"/>
+
+    <int:channel id="sendChannelMW"/>
+    <rabbit:template id="amqpTemplateMW" connection-factory="springRabbitConnectionFactory" message-converter="messageConverterMW" channel-transacted="${rabbit.int.send.channel.transacted:true}"/>
+	<!--  <bean id="messageConverterMW" class="org.springframework.amqp.support.converter.JsonMessageConverter"/> -->
+	
+	<bean id="messageConverterMW" class="org.springframework.amqp.support.converter.MarshallingMessageConverter">
+        <constructor-arg ref="marshallerMW"/>
+        <property name="createMessageIds" value="true"/>
+</bean>
+    <int-amqp:outbound-channel-adapter
+            id="outChannelMW"
+            channel="sendChannelMW"
+            amqp-template="amqpTemplateMW"
+            exchange-name="ffiq.events.mw.exchange"
+            routing-key-expression="headers.ROUTING_KEY"
+            mapped-request-headers="*"/>
+
+</beans>

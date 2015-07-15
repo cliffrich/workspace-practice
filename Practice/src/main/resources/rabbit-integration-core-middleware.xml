@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:oxm="http://www.springframework.org/schema/oxm"
+       xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.0.xsd
+		http://www.springframework.org/schema/oxm
+		    http://www.springframework.org/schema/oxm/spring-oxm-3.0.xsd">
+
+
+    <rabbit:template id="amqpTemplateMW" connection-factory="springRabbitConnectionFactory" channel-transacted="false"/>
+    <bean id="defaultRabbitConnectionFactory"
+          class="com.rabbitmq.client.ConnectionFactory"
+          p:host="localhost"
+          p:port="15672"
+          p:username="guest"
+          p:password="guest"
+          p:virtualHost="/"/>
+
+
+    <jee:jndi-lookup id="rabbitConnectionFactory"
+                     jndi-name="amqp/BizengEvoBrokerCF"
+                     default-ref="defaultRabbitConnectionFactory"
+                     resource-ref="true"
+                     expected-type="com.rabbitmq.client.ConnectionFactory"/>
+
+    <rabbit:connection-factory id="springRabbitConnectionFactory" connection-factory="rabbitConnectionFactory" />
+
+    <rabbit:admin connection-factory="springRabbitConnectionFactory" auto-startup="true"/>
+</beans>
